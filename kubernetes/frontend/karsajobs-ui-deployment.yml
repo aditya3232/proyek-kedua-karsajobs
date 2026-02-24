@@ -1,0 +1,32 @@
+# deploy & check :
+# kubectl apply -f karsajobs-ui-deployment.yml
+# kubectl get pod -n karsajobs
+
+apiVersion: apps/v1 # API version untuk Deployment
+kind: Deployment # Jenis resource: Deployment
+metadata:
+  name: karsajobs-ui # Nama Deployment UI
+  namespace: karsajobs # Namespace tempat UI dijalankan
+spec:
+  replicas: 1 # Jumlah pod UI (1 cukup untuk local/dev)
+  selector:
+    matchLabels:
+      app: karsajobs-ui # Selector untuk pod yang dikelola Deployment
+  template:
+    metadata:
+      labels:
+        app: karsajobs-ui # Label pod (dipakai oleh Service)
+    spec:
+      containers:
+        - name: karsajobs-ui # Nama container UI
+          image:
+            ghcr.io/aditya3232/karsajobs-ui:latest
+            # Image frontend karsajobs
+          imagePullPolicy:
+            Always
+            # Pull image selalu, biar dapet latest
+          ports:
+            - containerPort: 8000 # Port yang digunakan aplikasi UI
+          env:
+            - name: API_BASE_URL # Base URL backend API
+              value: "http://192.168.49.2:30080"

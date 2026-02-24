@@ -1,0 +1,57 @@
+# deploy :
+# kubectl apply -f karsajobs-deployment.yml
+
+# cek env
+# kubectl exec karsajobs-69f4f7dd54-hjdrm -n karsajobs -- env | grep MONGO
+
+apiVersion: apps/v1 # API version untuk resource Deployment
+kind: Deployment # Jenis resource: Deployment
+metadata:
+  name: karsajobs # Nama Deployment
+  namespace: karsajobs # Namespace tempat Deployment dijalankan
+spec:
+  replicas: 1 # Jumlah pod yang dijalankan
+  selector:
+    matchLabels:
+      app: karsajobs # Selector untuk mencocokkan pod yang dikelola Deployment
+  template: # Template pod yang akan dibuat
+    metadata:
+      labels:
+        app: karsajobs # Label pod (harus sama dengan selector Service)
+    spec:
+      containers:
+        - name: karsajobs # Nama container di dalam pod
+          image:
+            ghcr.io/aditya3232/karsajobs:latest
+            # Image aplikasi karsajobs
+          imagePullPolicy:
+            IfNotPresent
+            # Image hanya ditarik jika belum ada di node
+          ports:
+            - containerPort: 8080 # Port yang dibuka oleh container
+          env:
+            - name: APP_PORT # Environment variable untuk port aplikasi
+              value: "8080" # Nilai port aplikasi (string)
+
+            - name: MONGO_HOST # Host MongoDB
+              value: "mongodb" # Diambil dari nama MongoDB Service
+
+            - name: MONGO_USER # Username MongoDB
+              valueFrom:
+                secretKeyRef: # Mengambil nilai dari Kubernetes Secret
+                  name:
+                    mongodb-secret
+                    # Nama Secret MongoDB
+                  key:
+                    MONGO_ROOT_USERNAME
+                    # Key username di dalam Secret
+
+            - name: MONGO_PASS # Password MongoDB
+              valueFrom:
+                secretKeyRef: # Mengambil nilai dari Kubernetes Secret
+                  name:
+                    mongodb-secret
+                    # Nama Secret MongoDB
+                  key:
+                    MONGO_ROOT_PASSWORD
+                    # Key password di dalam Secret

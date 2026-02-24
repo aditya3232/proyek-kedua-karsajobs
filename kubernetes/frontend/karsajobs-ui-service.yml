@@ -1,0 +1,18 @@
+# deploy & check :
+# kubectl apply -f karsajobs-ui-service.yml
+# kubectl get svc -n karsajobs
+
+apiVersion: v1 # API version untuk resource Service
+kind: Service # Jenis resource: Service
+metadata:
+  name: karsajobs-ui-service # Nama Service untuk UI
+  namespace: karsajobs # Namespace tempat Service dibuat
+spec:
+  type: NodePort # Tipe Service: NodePort (bisa diakses dari host)
+  selector:
+    app: karsajobs-ui # Selector untuk memilih pod UI
+  ports:
+    - name: http # Nama port (opsional, best practice)
+      port: 80 # Port Service di dalam cluster
+      targetPort: 8000 # Port yang digunakan container UI (port container)
+      nodePort: 30081 # Port di node (host) untuk akses dari luar (ditentukan biar konsisten)

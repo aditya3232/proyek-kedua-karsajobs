@@ -1,0 +1,16 @@
+# mongo-configmap.yml, manifest yang digunakan untuk menyimpan informasi tidak sensitif
+# deploy manifest : kubectl apply -f mongo-configmap.yml -n karsajobs
+
+apiVersion: v1 # API version untuk ConfigMap
+kind: ConfigMap # Resource ConfigMap (untuk konfigurasi non-sensitif)
+metadata:
+  name: mongodb-config # Nama ConfigMap
+  namespace: karsajobs # Namespace tempat MongoDB berjalan
+data:
+  # mongo.conf akan dianggap sebagai file konfigurasi MongoDB
+  # mongo.conf => key ini akan diperlakukan sebagai file, bukan sekadar env var
+  # dbPath: /data/db => lokasi penyimpanan data MongoDB
+  # dbPath: /data/db => harus match dengan volume mount mongodb & pvc di statefulset
+  mongo.conf: |
+    storage:
+      dbPath: /data/db

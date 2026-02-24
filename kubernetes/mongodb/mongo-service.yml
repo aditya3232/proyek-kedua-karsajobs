@@ -1,0 +1,19 @@
+# memungkinkan kita untuk menetapkan DNS name yang sama ke suatu Pod, tak peduli berapa kali Pod tersebut di-restart
+# namanya bakalan sama mongodb-0, mongodb-1, dst..
+# clusterIP: None => tidak ada 1 ip service, dns langsung resolve ke ip pod, kubernetes tidak melakukan load balancing
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb # Nama service (dipakai oleh StatefulSet)
+  namespace: karsajobs
+  labels:
+    app: mongodb
+spec:
+  clusterIP: None # Menjadikan service ini HEADLESS
+  selector:
+    app: mongodb # Mengarah ke Pod MongoDB
+  ports:
+    - name: mongo
+      port: 27017 # Port service
+      targetPort: 27017 # Port MongoDB di container

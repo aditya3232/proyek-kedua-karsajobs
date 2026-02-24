@@ -1,0 +1,109 @@
+# =========================
+# StatefulSet MongoDB (versi baru, disesuaikan dengan PV/PVC baru)
+# =========================
+
+# hubungan dengan berkas lainnya :
+# - mongo-secret.yml : username & password root
+# - mongo-configmap.yml : file mongo.conf
+# - mongo-pv-pvc.yml : storage fisik persistent (versi baru)
+# - mongo-service.yml : DNS & network identity
+# - mongo-statefulset.yml : orkestrasi MongoDB
+
+# urutan deploy :
+# kubectl apply -f mongo-secret.yml
+# kubectl apply -f mongo-configmap.yml
+# kubectl apply -f mongo-pv-pvc.yml
+# kubectl apply -f mongo-service.yml
+# kubectl apply -f mongo-statefulset.yml
+
+# cek status :
+# kubectl get statefulset,svc,po,pv,pvc -n karsajobs
+
+# cek mongoDB jalan atau tidak :
+# kubectl exec -it mongodb-0 -n karsajobs -- mongosh
+
+# cek credentials
+# kubectl exec -it mongodb-0 -n karsajobs -- ls /etc/mongo-credentials
+
+# buat credentials
+# kubectl exec -it mongodb-0 -n karsajobs -- mongosh
+# use admin
+# db.createUser({
+#   user: "admin",
+#   pwd: "supersecretpassword",
+#   roles: [ { role: "root", db: "admin" } ]
+# })
+# kubectl rollout restart deployment karsajobs -n karsajobs
+
+# =========================
+# StatefulSet MongoDB (PV/PVC statis, sesuai ketentuan volumeMount)
+# =========================
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: karsajobs
+spec:
+  serviceName: mongodb # Headless Service untuk DNS stabil
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:6.0
+          ports:
+            - containerPort: 27017
+              name: mongo
+
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME_FILE
+              value: /etc/mongo-credentials/MONGO_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD_FILE
+              value: /etc/mongo-credentials/MONGO_ROOT_PASSWORD
+
+          command:
+            - mongod
+            - "--config"
+            - "/config/mongo.conf"
+            - "--bind_ip_all"
+
+          volumeMounts:
+            # Persistent Volume dengan mount path /data/db
+            - name: mongo-pvc
+              mountPath: /data/db
+
+            # ConfigMap dengan mount path /config
+            - name: mongo-config
+              mountPath: /config
+              readOnly: true
+
+            # Secret dengan mount path /etc/mongo-credentials
+            - name: mongo-credentials
+              mountPath: /etc/mongo-credentials
+              readOnly: true
+
+      volumes:
+        # Volume dari PVC statis
+        - name: mongo-pvc
+          persistentVolumeClaim:
+            claimName: mongo-pv-claim
+
+        # Volume dari ConfigMap
+        - name: mongo-config
+          configMap:
+            name: mongodb-config
+            items:
+              - key: mongo.conf
+                path: mongo.conf
+
+        # Volume dari Secret
+        - name: mongo-credentials
+          secret:
+            secretName: mongodb-secret

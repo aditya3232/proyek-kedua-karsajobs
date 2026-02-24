@@ -1,0 +1,44 @@
+# File ini mendefinisikan storage persisten untuk MongoDB
+# PV (PersistentVolume) = storage fisik di level cluster/node
+# PVC (PersistentVolumeClaim) = permintaan storage oleh aplikasi (MongoDB)
+# PVC akan terikat (bind) ke PV jika storageClassName, accessModes,
+# dan kapasitasnya sesuai
+
+# =========================
+# Persistent Volume (PV)
+# =========================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongo-pv-volume # Nama PersistentVolume
+  labels:
+    app: mongodb # Identitas aplikasi
+    tier: database # Layer aplikasi
+spec:
+  capacity:
+    storage: 5Gi # Kapasitas storage
+  accessModes:
+    - ReadWriteOnce # Hanya bisa di-mount oleh 1 node
+  persistentVolumeReclaimPolicy: Retain # Menentukan apa yang terjadi pada PersistentVolume (PV) ketika PVC dihapus. Data TIDAK dihapus, PV jadi Released
+  storageClassName: manual # Harus sama dengan PVC, karena sebagai label pencocokan antara PV & PVC
+  hostPath:
+    path: /mnt/data/mongovolume # Lokasi data di node (local disk), bukan di container didalam pod
+---
+# =========================
+# Persistent Volume Claim (PVC)
+# =========================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pv-claim # Nama PVC
+  namespace: karsajobs # Namespace MongoDB
+  labels:
+    app: mongodb # Identitas aplikasi
+    tier: database # Layer aplikasi
+spec:
+  accessModes:
+    - ReadWriteOnce # Harus match dengan PV
+  resources:
+    requests:
+      storage: 5Gi # Request storage
+  storageClassName: manual # Harus sama dengan PV
